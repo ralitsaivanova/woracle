@@ -85,3 +85,25 @@ def test_list_cake_has_entries(fastapi_client, test_db):
     response = fastapi_client.get("/cakes/")
     assert response.status_code == 200
     assert len(response.json()) == 2
+
+
+def test_delete_inexistent_id_returns_404(fastapi_client, test_db):
+    response = fastapi_client.delete("/cakes/33/")
+    assert response.status_code == 404
+
+
+def test_delete_cake_successfully(fastapi_client, test_db):
+    input_params = {
+        "name": "Victoria Sponge",
+        "comment": "a baking classic and a tasty tea-time treat",
+        "imageUrl": "http://www.victoriasponge.com/",
+        "yumFactor": 4,
+    }
+    # add a cake to find in the list
+    response = fastapi_client.post("/cakes/", json=input_params)
+    assert response.status_code == 201
+
+    cake_id = response.json()["id"]
+
+    response = fastapi_client.delete(f"/cakes/{cake_id}/")
+    assert response.status_code == 204

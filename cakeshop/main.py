@@ -1,8 +1,8 @@
-from typing import List
+from typing import List, Optional
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, delete, orm
 
 
 from cakeshop import dependencies
@@ -51,3 +51,19 @@ async def list_all_cakes(
     query_statement = select(db_models.Cake)
     result = db.execute(query_statement).scalars().all()
     return cake_schemas.CakeListOutput(result)
+
+
+@app.delete(
+    "/cakes/{cake_id}/",
+    status_code=204,
+    description="Delete a cake",
+)
+async def delete_cake(
+    *, cake_id: int, db: Session = Depends(dependencies.get_db)
+) -> None:
+    try:
+        db.query(db_models.Cake).where(db_models.Cake.id == cake_id).one()
+        db.execute(delete(db_models.Cake).where(db_models.Cake.id == cake_id))
+        db.commit()
+    except orm.exc.NoResultFound:
+        raise HTTPException(status_code=404, detail=f"Cake {cake_id} not found")
