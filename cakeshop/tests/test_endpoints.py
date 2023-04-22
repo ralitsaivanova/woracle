@@ -40,3 +40,48 @@ def test_adding_cake_fails_validation(fastapi_client, test_db):
             assert error_detail["msg"] == "invalid or missing URL scheme"
         if error_detail["loc"][1] == "yumFactor":
             assert error_detail["msg"] == "ensure this value is less than or equal to 5"
+
+
+def test_list_cake_empty(fastapi_client, test_db):
+    response = fastapi_client.get("/cakes/")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_cake_has_entries(fastapi_client, test_db):
+    input_params = {
+        "name": "Black Bun",
+        "comment": "A dense and rich fruit cake often used for the ritual of first-footing at Hogmanay.",
+        "imageUrl": "http://www.blackbun.com/",
+        "yumFactor": 3,
+    }
+    # add a cake to find in the list
+    response = fastapi_client.post("/cakes/", json=input_params)
+    assert response.status_code == 201
+
+    # get the list of cakes
+    response = fastapi_client.get("/cakes/")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["id"] == 1
+    assert response.json()[0]["name"] == input_params["name"]
+    assert response.json()[0]["comment"] == input_params["comment"]
+    assert response.json()[0]["imageUrl"] == input_params["imageUrl"]
+    assert response.json()[0]["yumFactor"] == input_params["yumFactor"]
+
+    # add another cake
+    input_params = {
+        "name": "Millionaire Shortbread",
+        "comment": "A shortbread biscuit base topped with caramel and milk chocolate.",
+        "imageUrl": "http://www.millionaire.com/",
+        "yumFactor": 5,
+    }
+    response = fastapi_client.post("/cakes/", json=input_params)
+    assert response.status_code == 201
+
+    # get the list of cakes again
+    response = fastapi_client.get("/cakes/")
+    assert response.status_code == 200
+    assert len(response.json()) == 2
